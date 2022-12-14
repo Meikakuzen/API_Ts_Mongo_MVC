@@ -1,17 +1,16 @@
 import express from 'express'
+import cors from 'cors'
+import 'dotenv/config'
+import {router} from './routes/index'
 
 const app = express()
+const PORT = process.env.PORT || 3000
 
-app.use(express.json()) //middleware para usar json como formato de salida
+app.use(cors())
+app.use(express.json())
 
-const PORT = 3000
-
-app.get('/ping', (_, res)=>{
-    
-    res.send('pong')
-})
-
+app.use(router)
 
 app.listen(PORT, ()=>{
-    console.log(`Servidor corriendo en puerto ${PORT}`)
+    console.log(`Servidor corriendo en ${PORT}`)
 })
