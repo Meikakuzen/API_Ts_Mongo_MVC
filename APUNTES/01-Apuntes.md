@@ -301,6 +301,8 @@ export const deleteItem=(req: Request, res: Response)=>{
 }
 ~~~
 
+    NOTA: esta código da error de typescript porque no se está usando ni el req ni el res. Se puede colocar _
+
 - Cómo la sentencia del catch se va a repetir en cada función del controller, creo una carpeta src/utils con el archivo errorHandle.ts
 - Uso el  error (errorRaw) con un interrogante porque puede no venir y lo paso por consola
 - utils/errorHandle.ts
@@ -317,7 +319,7 @@ export const handleHttp = (res: Response, error: string, errorRaw?:any)=>{
 - Ahora sustituyo el código en el catch del controlador por la función
 
 ~~~js
-export const getItem=(req: Request, res: Response)=>{
+export const getItem=(_: Request, res: Response)=>{
     try {
         
     } catch (error) {
@@ -469,7 +471,7 @@ import { Car } from "../interfaces/car.interface"
 import { ItemModel } from "../models/item.model"
 
 
-export const insertItem = async (item: Car)=>{
+export const insertCar= async (item: Car)=>{
     const responseInsert = await ItemModel.create(item)
 
     return responseInsert
@@ -482,7 +484,7 @@ export const insertItem = async (item: Car)=>{
 ~~~ts
 export const postItem= async ({body}: Request, res: Response)=>{
     try {
-     const responseItem = await insertItem(body)
+     const responseItem = await insertCar(body)
      res.status(200).send(responseItem)
         
     } catch (error) {
@@ -524,6 +526,127 @@ export const postItem= async ({body}: Request, res: Response)=>{
 - Perfecto!
 - Si no colocara alguno de los campos requeridos la aplicación daría error 500
 - Falta hacer las validaciones
+- Creo el servicio de getItems en item.service
 
+~~~ts
+export const getCars = async()=>{
+    const responseItems = ItemModel.find({})
+    return responseItems
+}
+~~~
 
+- item.controller
+
+~~~ts
+export const getItems= async(_: Request, res: Response)=>{
+    try {
+        const response= await getCars()
+        res.status(200).send(response)
+        
+    } catch (error) {
+        handleHttp(res, 'ERROR_GET_ITEMS')
+    }
+}
+~~~
+
+- Voy al servicio para codear el getCar
+- El _id de mongo será de tipo id
+
+~~~ts
+export const getCar= async(id: string)=>{
+    const carResponse= await ItemModel.findOne({_id: id})
+    return carResponse
+}
+~~~
+
+- Lo coloco en el controlador. Extraigo params del request con desestructuración y de params el id
+
+~~~ts
+export const getItem= async ({params}: Request, res: Response)=>{
+    try {
+        const {id} = params
+        const car = await getCar(id)
+        res.status(200).send(car)
+    
+    } catch (error) {
+        handleHttp(res, 'ERROR_GET_ITEM')
+    }
+}
+~~~
+
+- Sigue la función del CRUD, falta update y delete
+- Update item.service: 
+    - Le paso el id y la data al método
+    - Le coloco un segundo objeto con new: true para que findOneAndUpdate me devuelva el objeto actualizado
+
+~~~js
+export const updateCar = async (id: string, data: Car)=>{
+    const carResponse= await ItemModel.findOneAndUpdate({_id:id}, data, {new: true})
+    return carResponse
+}
+~~~
+
+- Coloco la función en el controlador
+    - Extraigo el params y el body del request
+    - Envío el body como data
+
+~~~ts
+export const updateItem= async ({params, body}: Request, res: Response)=>{
+    try {
+        const {id} = params
+
+       const updatedCar = await updateCar(id, body)
+
+        res.send(updatedCar)
+        
+    } catch (error) {
+        handleHttp(res, 'ERROR_UPDATE_ITEM')
+    }
+}
+~~~
+
+- Delete
+- item.service
+
+~~~ts
+export const deleteCar = async( id:string)=>{
+    const carResponse= await ItemModel.findOneAndDelete({_id:id})
+    return carResponse
+}
+~~~
+
+- item.controller
+
+~~~ts
+export const deleteItem=async ({params}: Request, res: Response)=>{
+    try {
+        const {id}= params
+
+        await deleteCar(id)
+        res.send("Car deleted")
+        
+    } catch (error) {
+        handleHttp(res, 'ERROR_DELETE_ITEM')
+    }
+}
+~~~
+
+- Una validación en getItem del controller podría ser así
+
+~~~ts
+export const getItem= async ({params}: Request, res: Response)=>{
+    try {
+        const {id} = params
+        const response = await getCar(id)
+        const data = response ? response: 'NOT_FOUND'
+        res.status(200).send(data)
+        
+    
+    } catch (error) {
+        handleHttp(res, 'ERROR_GET_ITEM')
+    }
+}
+~~~
+
+> 1:08:19
 
