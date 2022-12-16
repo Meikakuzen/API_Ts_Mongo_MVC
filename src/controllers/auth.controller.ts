@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import {registerNewUser} from '../services/auth.services'
+import {loginUser, registerNewUser} from '../services/auth.services'
 
 export const resgisterController= async ({body}:Request, res: Response)=>{
     
@@ -8,7 +8,16 @@ export const resgisterController= async ({body}:Request, res: Response)=>{
     res.status(200).send({responseNewUser})
 }
 
-export const loginController=(req:Request, res: Response)=>{
-
+export const loginController= async ({body}:Request, res: Response)=>{
+    const {email, password}= body
+    const responseLogin = await loginUser({email, password})
+ 
+    if(responseLogin==='PASSWORD_INCORRECT'){
+        res.status(403).send(responseLogin)
+    }else{
+        
+        res.send(responseLogin)
+    }
+    
 }
 

@@ -198,7 +198,111 @@ export const resgisterController= async ({body}:Request, res: Response)=>{
 
 ## Encriptar password
 
-- creo un archivo en utils/bcrypt.handle.ts
+- Creo un archivo en utils/bcrypt.handle.ts con las funciones encrypt y verified
+- Importo de bcrypt hash y compare
+- Necesito que la función encrypt sea asíncrona para usar el await
+- Le paso al método hash el password y el salt (complejidad del encriptado, 10 por defecto)
+
+~~~js
+import {hash, compare} from 'bcryptjs'
+
+const encrypt = async (password:string)=>{
+    const passwordHash = await hash(password, 10)
+
+    return passwordHash
+}
+
+const verified = () =>{
+
+}
+
+export { encrypt, verified }
+~~~
+
+- Voy al auth.service y antes de crear el usuario registrado encripto el password
+
+~~~js
+export const registerNewUser = async ({name, email, password}: User)=>{
+    const existUser =  await UserModel.findOne({email})  
+    if(existUser) return 'ALREADY_USER'
+
+    const passwordHash = await encrypt(password)
+
+    const registerNewUser = await UserModel.create({name, email, password: passwordHash})
+
+    return registerNewUser
+}
+~~~
+
+- Para comparar el password se usará la funcion verified en /utils/bcrypt.handle.ts
+
+~~~js
+import {hash, compare} from 'bcryptjs'
+
+const encrypt = async (password:string)=>{
+    const passwordHash = await hash(password, 10)
+
+    return passwordHash
+}
+
+const verified = async (password: string, passwordHash: string) =>{
+    const isCorrect =  await compare(password, passwordHash)
+
+    return isCorrect
+}
+
+export { encrypt, verified }
+~~~
+
+- Esto devolverá un boolean
+- En auth.services toca trabajar el login
+- Desestructuro el email y el password, de tipo Auth
+- Me aseguro de que el usuario exista
+
+~~~js
+export const loginUser = async ({email, password}:Auth)=>{
+    const existUser =  await UserModel.findOne({email})  
+    if(!existUser) return 'NOT_FOUND'
+
+    const passwordHash = existUser.password
+    const isCorrect = await verified(password, passwordHash)
+    if(!isCorrect) return "PASSWORD_INCORRECT"
+
+    return existUser
+}
+~~~
+
+- Ahora enb el auth.controller coloco el loginUser
+
+~~~js
+export const loginController= async({body}:Request, res: Response)=>{
+    const {email, password}= body
+    const responseLogin = await loginUser({email, password})
+    res.send(responseLogin)
+}
+~~~
+
+- Si hay un error en el password me sigue devolviendo un status 200.
+- En el controlador puedo enviar un status en caso de error
+
+~~~js
+export const loginController= async ({body}:Request, res: Response)=>{
+    const {email, password}= body
+    const responseLogin = await loginUser({email, password})
+ 
+    if(responseLogin==='PASSWORD_INCORRECT'){
+        res.status(403).send(responseLogin)
+    }else{
+        
+        res.send(responseLogin)
+    }
+    
+}
+~~~
+
+- Ahora se necesita usar un JSONWEBTOKEN para la autorización, ya que ya tengo la autenticación
+- Para ello creo /utils/jwt.handle.ts
+
 
 
 
