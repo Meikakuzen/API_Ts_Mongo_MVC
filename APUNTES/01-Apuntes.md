@@ -42,7 +42,7 @@
 
 - Creo el archivo index.ts (puede ser que lo llame app.ts más adelante, son lo mismo) en src y configuro el server
 
-~~~ts
+~~~js
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
@@ -138,7 +138,7 @@ readdirSync(PATH_ROUTER).filter((fileName)=>{
 
 - Una vez aqui tengo que hacer uso del router, para que tenga acceso al nombre de la ruta de forma dinámica
 
-~~~ts
+~~~js
 readdirSync(PATH_ROUTER).filter((fileName)=>{
     const cleanName= cleanFileName(fileName)
     if(cleanName != 'index'){
@@ -154,7 +154,7 @@ readdirSync(PATH_ROUTER).filter((fileName)=>{
 - Uso el router del index.ts(routes) con el nombre del archivo limpio como ruta, y con el router con notación con punto capturado de la promesa ya que lo exporté como un objeto
 
 - index.ts (routes)
-~~~ts
+~~~js
 import {Router} from 'express'
 import {readdirSync} from 'fs'
 
@@ -188,7 +188,7 @@ export {router}
 - Para usar el cargador de rutas dinámico cambio la importación del router de item a index
 - index.ts (src)
 
-~~~ts
+~~~js
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
@@ -209,7 +209,7 @@ app.listen(PORT, ()=>{
 
 - item.ts. (Se cambió la ruta del GET de '/items' a '/')
 
-~~~ts
+~~~js
 import {Router, Response} from 'express'
 
 const router = Router()
@@ -252,7 +252,7 @@ export default dbConnect
 - Voy a index.ts (archivo principal), importo dbConnection y lo invoco
 - .then porque devuelve una promesa
 
-~~~ts
+~~~js
 dbConnect().then(()=> console.log("DB corriendo"))
 ~~~
 ----
@@ -277,7 +277,7 @@ export interface Car{
 - Creo en controllers item.controller.ts
 - el controller alberga las funciones típicas de un CRUD
 
-~~~ts
+~~~js
 import { Request, Response } from "express"
 
 export const getItem=(req: Request, res: Response)=>{
@@ -307,7 +307,7 @@ export const deleteItem=(req: Request, res: Response)=>{
 - Uso el  error (errorRaw) con un interrogante porque puede no venir y lo paso por consola
 - utils/errorHandle.ts
 
-~~~ts
+~~~js
 import { Response } from "express"
 
 export const handleHttp = (res: Response, error: string, errorRaw?:any)=>{
@@ -334,7 +334,7 @@ export const getItem=(_: Request, res: Response)=>{
 - El controlador no debe de saber de lógica de negocio
 - Esto es lo que **NO DEBE HACER UN CONTROLADOR**
 
-~~~ts
+~~~js
 export const postItem=(req: Request, res: Response)=>{
     try {
         const user = req.body
@@ -357,7 +357,7 @@ export const postItem=(req: Request, res: Response)=>{
 
 - item (en /routes)
 
-~~~ts
+~~~js
 import {Router} from 'express'
 import { deleteItem, getItem, getItems, postItem, updateItem } from '../controllers/item.controller'
 
@@ -376,7 +376,7 @@ export {router}
 - Uso ThunderClient, una petición POST a localhost:3000/item con algo en el body en formato json
 - Le pongo algo en el res.send para que no se quede colgado
 
-~~~ts
+~~~js
 export const postItem=(req: Request, res: Response)=>{
     try {
         console.log(req.body)
@@ -466,7 +466,7 @@ export const ItemModel = model('item', ItemSchema)
 - Creo un nuevo item de tipo Car y lo retorno
 - item.service.ts
 
-~~~ts
+~~~js
 import { Car } from "../interfaces/car.interface"
 import { ItemModel } from "../models/item.model"
 
@@ -481,7 +481,7 @@ export const insertCar= async (item: Car)=>{
 - Voy al controlador y le paso a la función el req.body
 - en el handleHttp puedo pasarle error como tercer argumento o no, es opcional. Si no hay error lo omitirá
 
-~~~ts
+~~~js
 export const postItem= async ({body}: Request, res: Response)=>{
     try {
      const responseItem = await insertCar(body)
@@ -528,7 +528,7 @@ export const postItem= async ({body}: Request, res: Response)=>{
 - Falta hacer las validaciones
 - Creo el servicio de getItems en item.service
 
-~~~ts
+~~~js
 export const getCars = async()=>{
     const responseItems = ItemModel.find({})
     return responseItems
@@ -537,7 +537,7 @@ export const getCars = async()=>{
 
 - item.controller
 
-~~~ts
+~~~js
 export const getItems= async(_: Request, res: Response)=>{
     try {
         const response= await getCars()
@@ -552,7 +552,7 @@ export const getItems= async(_: Request, res: Response)=>{
 - Voy al servicio para codear el getCar
 - El _id de mongo será de tipo id
 
-~~~ts
+~~~js
 export const getCar= async(id: string)=>{
     const carResponse= await ItemModel.findOne({_id: id})
     return carResponse
@@ -590,7 +590,7 @@ export const updateCar = async (id: string, data: Car)=>{
     - Extraigo el params y el body del request
     - Envío el body como data
 
-~~~ts
+~~~js
 export const updateItem= async ({params, body}: Request, res: Response)=>{
     try {
         const {id} = params
@@ -608,7 +608,7 @@ export const updateItem= async ({params, body}: Request, res: Response)=>{
 - Delete
 - item.service
 
-~~~ts
+~~~js
 export const deleteCar = async( id:string)=>{
     const carResponse= await ItemModel.findOneAndDelete({_id:id})
     return carResponse
@@ -617,7 +617,7 @@ export const deleteCar = async( id:string)=>{
 
 - item.controller
 
-~~~ts
+~~~js
 export const deleteItem=async ({params}: Request, res: Response)=>{
     try {
         const {id}= params
@@ -633,7 +633,7 @@ export const deleteItem=async ({params}: Request, res: Response)=>{
 
 - Una validación en getItem del controller podría ser así
 
-~~~ts
+~~~js
 export const getItem= async ({params}: Request, res: Response)=>{
     try {
         const {id} = params
