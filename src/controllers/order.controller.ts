@@ -1,9 +1,13 @@
-import {Request, Response} from 'express'
+import { Response} from 'express'
+import { RequestExt } from '../middlewares/session'
 import { handleHttp } from '../utils/errorHandle'
 
-export const getItems= async(_: Request, res: Response)=>{
+export const getItems= async(req: RequestExt, res: Response)=>{
     try {
-     res.send('ESTO SOLO LO VEN LAS PERSONAS AUTENTICADAS')
+     res.send({
+        msg: 'ESTO SOLO LO VEN LAS PERSONAS AUTENTICADAS',
+        user: req?.user
+     })
   
         
     } catch (error) {

@@ -121,5 +121,146 @@ router.get('/', checkJwt, getItems)
 ~~~
 
 - Si hago una petición GET a /order me devuelve ESTO SOLO LO VEN LAS PERSONAS AUTENTICADAS y en consola 'Bearer HOLa SOY UN TOKEN' (que es lo que he colocado en Auth/Bearer de THUNDERCLIENT)
+- Me interesa lo que viene después de Bearer en el string ( el JWT )
+- session.ts
+
+~~~js
+import { NextFunction, Request, Response } from "express";
 
 
+
+export const checkJwt = (req: Request, res: Response, next: NextFunction)=>{
+    try {
+        const jwtByUser= req.headers.authorization || null
+        
+        const jwt = jwtByUser?.split(' ').pop() //extraigo el token
+        
+
+        next()
+        
+    } catch (error) {
+        res.status(400).send({
+            msg: "SESIÓN_NO_VÁLIDA"
+        })
+    }
+}
+~~~
+
+- Para verificar el token uso la función verify del jwt.handle.ts
+
+~~~js
+export const verifyToken =(jwt: string)=>{
+   const isOk =  verify(jwt, JWT_SECRET)
+   return isOk
+}
+~~~
+
+- Coloco el jwt en un template string para que sea un string y no de error. 
+- Si retorna un false pueden pasar varias cosas
+    - Se venció el token
+    - El usuario no está pasando token
+    - El usuario está pasando el token de manera incorrecta
+- jwt.handle.ts
+
+~~~js
+import { NextFunction, Request, Response } from "express";
+import { verifyToken } from "../utils/jwt.handle";
+
+
+
+export const checkJwt = (req: Request, res: Response, next: NextFunction)=>{
+    try {
+        const jwtByUser= req.headers.authorization || null
+        
+        const jwt = jwtByUser?.split(' ').pop()
+
+        const verifiedToken = verifyToken(`${jwt}`)
+
+        if(!verifiedToken){
+            res.status(401).send({
+                msg: 'INVALID_TOKEN'
+            })
+        }else{
+            console.log({jwtByUser})
+            next()
+        }
+
+        
+        
+    } catch (error) {
+        res.status(400).send({
+            msg: "SESIÓN_NO_VÁLIDA"
+        })
+    }
+}
+~~~
+
+- Hago el POST con un usuario y contraseña válidos a /auth/login con THUNDERCLIENT para extraer el token
+- Coloco el token en Auth/Bearer de THUNDERCLIENT y hago un GET a /order
+- Me sale el mensaje ESTO SOLO LO VEN LAS PERSONAS AUTENTICADAS y me imprime en consola el token
+- Si le hago un console.log a verifiedToken sale el id: email ( pues utilicé el email como id)
+- verifiedToken sería más bien isUser
+- Si yo quiero pasar este usuario al controlador a través del middleware, creo una interfaz extendida del req.
+- Pongo el user como opcional y para que no de error Typescript con el req.user le pongo que devuelve un string o un JwtPayload 
+- session.ts
+
+~~~js
+import { NextFunction, Request, Response } from "express";
+import { JwtPayload } from "jsonwebtoken";
+import { verifyToken } from "../utils/jwt.handle";
+
+export interface RequestExt extends Request{
+    user?: string | JwtPayload
+}
+
+
+export const checkJwt = (req: RequestExt, res: Response, next: NextFunction)=>{
+    try {
+        const jwtByUser= req.headers.authorization || null
+        
+        const jwt = jwtByUser?.split(' ').pop()
+
+        const isUser = verifyToken(`${jwt}`)
+
+        if(!isUser){
+            res.status(401).send({
+                msg: 'INVALID_TOKEN'
+            })
+        }else{
+            req.user = isUser
+            next()
+        }
+
+        
+        
+    } catch (error) {
+        res.status(400).send({
+            msg: "SESIÓN_NO_VÁLIDA"
+        })
+    }
+}
+~~~
+
+- Si ahora voy al controlador y le pongo un console.log(req.user) debería retornarme el email
+- Para ello debo importar la interfaz del Request extendida y aplicarla
+- Como puede venir o no pongo el req con un interrogante
+- order.controller.ts
+
+~~~js
+import { Response} from 'express'
+import { RequestExt } from '../middlewares/session'
+import { handleHttp } from '../utils/errorHandle'
+
+export const getItems= async(req: RequestExt, res: Response)=>{
+    try {
+     res.send({
+        msg: 'ESTO SOLO LO VEN LAS PERSONAS AUTENTICADAS',
+        user: req?.user
+     })
+  
+        
+    } catch (error) {
+        handleHttp(res, 'ERROR_GET_ITEMS')
+    }
+}
+~~~
